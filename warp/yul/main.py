@@ -60,10 +60,11 @@ def transpile_from_solidity(sol_src_path, main_contract) -> dict:
     return {"cairo_code": cairo_code, "sol_abi": abi}
 
 
-def transpile_from_yul(yul_ast: ast.Node) -> str:
+def transpile_from_yul(yul_ast: ast.Node, optimizers_order="vcolrfd") -> str:
     name_gen = NameGenerator()
     cairo_functions = CairoFunctions(FunctionGenerator())
     builtins = get_default_builtins(cairo_functions)
+
     yul_ast = ForLoopSimplifier().map(yul_ast)
     yul_ast = ForLoopEliminator(name_gen).map(yul_ast)
     yul_ast = MangleNamesVisitor().map(yul_ast)
@@ -74,10 +75,20 @@ def transpile_from_yul(yul_ast: ast.Node) -> str:
     yul_ast = ExpressionSplitter(name_gen).map(yul_ast)
     yul_ast = RevertNormalizer(builtins).map(yul_ast)
     yul_ast = ScopeFlattener(name_gen).map(yul_ast)
-    yul_ast = LeaveNormalizer().map(yul_ast)
-    yul_ast = RevertNormalizer(builtins).map(yul_ast)
-    yul_ast = FunctionPruner().map(yul_ast)
-    yul_ast = DeadcodeEliminator().map(yul_ast)
+
+    function_map = {
+        "v": VariableInliner,
+        "c": ConstantFolder,
+        "o": FoldIf,
+        "l": LeaveNormalizer,
+        "r": lambda: RevertNormalizer(builtins),
+        "f": FunctionPruner,
+        "d": DeadcodeEliminator,
+    }
+
+    for function in optimizers_order:
+        if function in function_map:
+            yul_ast = function_map[function]().map(yul_ast)
 
     cairo_visitor = ToCairoVisitor(name_gen, cairo_functions, get_default_builtins)
 
