@@ -505,6 +505,19 @@ class Gas(DynamicHandler):
         return super().get_function_call([])
 
 
+class GasLeft(DynamicHandler):
+    def __init__(self, cairo_functions: CairoFunctions):
+        super().__init__(lambda: cairo_functions.constant_function(10 ** 5))
+
+    def get_function_call(self, function_args: Sequence[str]) -> str:
+        return super().get_function_call([])
+
+
+class GasPrice(DynamicHandler):
+    def __init__(self, cairo_functions: CairoFunctions):
+        super().__init__(lambda: cairo_functions.constant_function(10))
+
+
 class Call(StaticHandler):
     def __init__(self):
         super().__init__(
@@ -566,15 +579,19 @@ class CallValue(DynamicHandler):
         return super().get_function_call([])
 
 
+class ChainID(DynamicHandler):
+    def __init__(self, cairo_functions: CairoFunctions):
+        super().__init__(lambda: cairo_functions.constant_function(1))
+
+    def get_function_call(self, function_args: Sequence[str]) -> str:
+        return super().get_function_call([])
+
+
 class BaseFee(NotImplementedStarkNet):
     pass
 
 
 class BlockHash(NotImplementedStarkNet):
-    pass
-
-
-class ChainID(NotImplementedStarkNet):
     pass
 
 
@@ -611,10 +628,6 @@ class ExtCodeCopy(NotImplementedStarkNet):
 
 
 class GasLimit(NotImplementedStarkNet):
-    pass
-
-
-class GasPrice(NotImplementedStarkNet):
     pass
 
 
@@ -672,6 +685,7 @@ def get_default_builtins(
         "calldatasize": CallDataSize(),
         "caller": Caller(),
         "callvalue": CallValue(cairo_functions),
+        "chainid": ChainID(cairo_functions),
         "codecopy": CodeCopy(),
         "codesize": CodeSize(),
         "coinbase": Coinbase(),
@@ -685,8 +699,9 @@ def get_default_builtins(
         "extcodecopy": ExtCodeCopy(),
         "extecodesize": ExtCodeSize(cairo_functions),
         "gas": Gas(cairo_functions),
+        "gasleft": GasLeft(cairo_functions),
         "gaslimit": GasLimit(),
-        "gasprice": GasPrice(),
+        "gasprice": GasPrice(cairo_functions),
         "gt": Gt(),
         "iszero": IsZero(),
         "keccak256": SHA3(),
@@ -706,6 +721,7 @@ def get_default_builtins(
         "not": Not(),
         "number": Number(),
         "or": Sub(),
+        "origin": Caller(),
         "pedersen": Pedersen(),
         "return": Return(),
         "returndatacopy": ReturnDataCopy(),
